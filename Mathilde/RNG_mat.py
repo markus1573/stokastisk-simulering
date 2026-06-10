@@ -32,8 +32,7 @@ def show_scatter(U):
     plt.title('Scatter of concecutive points agains each other')    
 
 
-def perform_statistical_test_X2(U,critical_value,m=0 , classes = 10):
-    print()
+def perform_statistical_test_X2(U,critical_value,m=0 , classes = 10, verbose=True):
     expected_n = len(U)/classes
     observed_n, bin_edges = np.histogram(U, bins=classes)
 
@@ -42,38 +41,47 @@ def perform_statistical_test_X2(U,critical_value,m=0 , classes = 10):
     df = classes-1-m
     #print(f'Degrees of fredom is {df} which corresponds to {critical_value} (look up)')
     if T<critical_value:
-        print(f"PASSED : (statistical_test_X2) T value T = {T} is less than critical value {critical_value}")
+        if verbose:
+            print(f"PASSED : (statistical_test_X2) T value T = {T} is less than critical value {critical_value}")
+        return T, True
     else: 
-        print(f"FAILED : (statistical_test_X2) T value T = {T} is higher than critical value {critical_value}")
-    return T
+        if verbose:
+            print(f"FAILED : (statistical_test_X2) T value T = {T} is higher than critical value {critical_value}")
+        return T, False
 
 
-def perform_Kolmogorov_Smirnov_test(U, classes, critical_value):
-    print()
+
+def perform_Kolmogorov_Smirnov_test(U, classes, critical_value, verbose=True):
     expected_n = len(U)/classes
     observed_n, bin_edges = np.histogram(U, bins=classes)
-    expected_list = [i*expected_n for i in range(classes)]
-    observed_n = np.array(observed_n)
-    observed_list = [int(np.sum(observed_n[:i])) for i in range(len(observed_n))]
-    observed_list, expected_list
+    expected_list = [i*expected_n for i in range(1,classes+1)]
+    #observed_list = [int(np.sum(observed_n[:i])) for i in range(len(observed_n))]
+    observed_list = np.cumsum(observed_n)
     n = len(U)
+
     observed_list =np.array(observed_list)/n
     expected_list = np.array(expected_list)/n
-    plt.plot(expected_list, linewidth=8)
+    if verbose:
+        plt.plot(expected_list, linewidth=8)
 
-    plt.plot(list(range(0, classes)), observed_list, c='r', marker='o')
+        plt.plot(list(range(0, classes)), observed_list, c='r', marker='o')
 
     Dn = np.max(np.abs(observed_list-expected_list))
-    if Dn<critical_value:
-        print(f"PASSED : (Kolmogorov_Smirnov_test) Dn value Dn = {Dn} is less than critical value {critical_value}")
+    adjusted_test_statistic = (np.sqrt(n)+0.12+0.11/np.sqrt(n))*Dn
+    #print(Dn)
+
+    if adjusted_test_statistic<critical_value:
+        if verbose:
+            print(f"PASSED : (Kolmogorov_Smirnov_test) adjusted_test_statistic value adjusted_test_statistic = {adjusted_test_statistic} is less than critical value {critical_value}") 
+        return adjusted_test_statistic, True
     else: 
-        print(f"FAILED : (Kolmogorov_Smirnov_test) Dn value Dn = {Dn} is higher than critical value {critical_value}")
-    return Dn
+        if verbose:
+            print(f"FAILED : (Kolmogorov_Smirnov_test) adjusted_test_statistic value adjusted_test_statistic = {adjusted_test_statistic} is higher than critical value {critical_value}")
+        return adjusted_test_statistic, False
 
 
 
-def perform_run_test1(U,critical_value):
-    print()
+def perform_run_test1(U,critical_value, verbose=True):
     # Run test 1
     median_ = np.median(U)
     # n1: number of samples above median
@@ -99,6 +107,7 @@ def perform_run_test1(U,critical_value):
             Rb +=1
 
     T = Ra + Rb
+
     #print(f"Ra = {Ra} and Rb = {Rb} \nT={T}")
 
     # gausian (normal dist)
@@ -107,15 +116,17 @@ def perform_run_test1(U,critical_value):
 
     z_score = (T-mean_normal)/np.sqrt(variance_normal)
     #print(f"\nz-score = {z_score}")
-    if z_score<critical_value:
-        print(f"PASSED : (Run-test1) z_score value z_score = {z_score} is less than critical value {critical_value}")
+    if np.abs(z_score)<critical_value:
+        if verbose:
+            print(f"PASSED : (Run-test1) z_score value z_score = {z_score} is less than critical value {critical_value}")
+        return z_score, True
     else: 
-        print(f"FAILED : (Run-test1) z_score value z_score = {z_score} is higher than critical value {critical_value}")
-    return z_score
+        if verbose:
+            print(f"FAILED : (Run-test1) z_score value z_score = {z_score} is higher than critical value {critical_value}")
+        return z_score, False
 
 
-def perform_run_test2(U,critical_value):
-    print()
+def perform_run_test2(U,critical_value, verbose=True):
     n = len(U)
     # Run test II ()Up/down from Knuth
     r =1
@@ -163,16 +174,18 @@ def perform_run_test2(U,critical_value):
 
     Z = (1 / (n - 6)) * (R - n * B).T @ A @ (R - n * B)
     #print(f"Z = {Z}")
-    if Z<critical_value:
-        print(f"PASSED :(Run-test2) Z value Z = {Z} is less than critical value {critical_value}")
+    if np.abs(Z)<critical_value:
+        if verbose:
+            print(f"PASSED :(Run-test2) Z value Z = {Z} is less than critical value {critical_value}")
+        return Z, True
     else: 
-        print(f"FAILED : (Run-test2) Z value Z = {Z} is higher than critical value {critical_value}")
-    return Z
+        if verbose:
+            print(f"FAILED : (Run-test2) Z value Z = {Z} is higher than critical value {critical_value}")
+        return Z, False
 
 
-def perform_correlation_test(U,critical_value,h=2):
+def perform_correlation_test(U,critical_value,h=2, verbose=True):
     # h is the lag we want to skip with 
-    print()
 
 
     indexes_to_search = np.arange(0,len(U),h)
@@ -189,8 +202,11 @@ def perform_correlation_test(U,critical_value,h=2):
     # 3. Calculate the actual Z-test statistic using your calculated 'c'
     Z = (ch - expected_mean) / std_dev
 
-    if Z<critical_value:
-        print(f"PASSED : (Correlation test) Z value Z = {Z} is less than critical value {critical_value}")
+    if np.abs(Z)<critical_value:
+        if verbose:
+            print(f"PASSED : (Correlation test) Z value Z = {Z} is less than critical value {critical_value}")
+        return Z, True
     else: 
-        print(f"FAILED : (Correlation test) Z value Z = {Z} is higher than critical value {critical_value}")
-    return Z
+        if verbose:
+            print(f"FAILED : (Correlation test) Z value Z = {Z} is higher than critical value {critical_value}")
+        return Z, False
